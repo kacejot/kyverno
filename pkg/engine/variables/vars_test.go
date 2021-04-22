@@ -278,6 +278,56 @@ func Test_subVars_withRegexReplaceAll(t *testing.T) {
 	assert.Equal(t, string(out), string(expected))
 }
 
+func Test_SubstituteVars_ReplaceAllUsingPath(t *testing.T) {
+	rawPattern := []byte(`{
+		"context": "{{ replace_all( request.object.metadata.name, 'staging.mycompany.com', 'mirror.mycompany.com') }}" 
+	}`)
+
+	rawResource := []byte(`{
+		"apiVersion": "networking.k8s.io/v1beta1",
+		"kind": "Ingress",
+		"metadata": {
+		  "name": "xxx",
+		  "namespace": "staging"
+		},
+		"spec": {
+		  "rules": [
+			{
+			  "host": "xxx.mycompany.com",
+			  "http": {
+				"paths": [
+				  {
+					"backend": {
+					  "serviceName": "xxx",
+					  "servicePort": 443
+					},
+					"path": "/"
+				  }
+				]
+			  }
+			}
+		  ]
+		}
+	  }`)
+
+	var pattern, resource interface{}
+	var err error
+
+	err = json.Unmarshal(rawPattern, &pattern)
+	assert.NilError(t, err)
+
+	err = json.Unmarshal(rawResource, &resource)
+	assert.NilError(t, err)
+
+	// context
+	ctx := context.NewContext()
+	err = ctx.AddResource(rawResource)
+	assert.NilError(t, err)
+
+	_, err = SubstituteAll(log.Log, ctx, pattern)
+	assert.NilError(t, err)
+}
+
 func Test_ReplacingPathWhenDeleting(t *testing.T) {
 	patternRaw := []byte(`"{{request.object.metadata.annotations.target}}"`)
 
