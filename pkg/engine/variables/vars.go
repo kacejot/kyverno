@@ -234,8 +234,12 @@ func substituteVariablesIfAny(log logr.Logger, ctx context.EvalInterface) jsonUt
 
 // getJMESPath converts path to JMES format
 func getJMESPath(rawPath string) string {
-	tokens := strings.Split(rawPath, "/")[3:] // skip empty element and two non-resource (like mutate.overlay)
-	path := strings.Join(tokens, ".")
+	tokens := strings.Split(rawPath, "/") // skip empty element and two non-resource (like mutate.overlay)
+	if len(tokens) < 3 {
+		return strings.Join(tokens[1:], ".")
+	}
+
+	path := strings.Join(tokens[3:], ".")
 	regex := regexp.MustCompile(`\.([\d])\.`)
 	return string(regex.ReplaceAll([]byte(path), []byte("[$1].")))
 }

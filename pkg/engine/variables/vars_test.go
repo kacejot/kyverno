@@ -333,6 +333,40 @@ func Test_subVars_withRegexReplaceAll(t *testing.T) {
 	assert.Equal(t, string(out), string(expected))
 }
 
+func Test_subVars_withRegexReplaceAllShortPath(t *testing.T) {
+	patternMap := []byte(`{
+		"port": "{{ regex_replace_all_literal('.*', '{{@}}', '1313') }}",
+		"name": "ns-owner-{{request.object.metadata.name}}"
+	}`)
+
+	resourceRaw := []byte(`{
+		"port": "43123",
+		"name": "temp1",
+		"metadata": {
+			"name": "temp",
+			"namespace": "n1"
+		}
+	}`)
+	expected := []byte(`{"name":"ns-owner-temp","port":"1313"}`)
+
+	var pattern, resource interface{}
+	var err error
+	err = json.Unmarshal(patternMap, &pattern)
+	assert.NilError(t, err)
+	err = json.Unmarshal(resourceRaw, &resource)
+	assert.NilError(t, err)
+	// context
+	ctx := context.NewContext()
+	err = ctx.AddResource(resourceRaw)
+	assert.NilError(t, err)
+
+	output, err := SubstituteAll(log.Log, ctx, pattern)
+	assert.NilError(t, err)
+	out, err := json.Marshal(output)
+	assert.NilError(t, err)
+	assert.Equal(t, string(out), string(expected))
+}
+
 func Test_ReplacingPathWhenDeleting(t *testing.T) {
 	patternRaw := []byte(`"{{request.object.metadata.annotations.target}}"`)
 
